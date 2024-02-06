@@ -27,7 +27,7 @@ class ARSckpt:
         print(f"[{timestamp}] Rank {rank} snapshot started...")
         with self.thread_lock:
             asyncio.run(self.allreduce_semaphore.acquire())
-        
+        print (f"rank {rank} acquire semaphore")
         checkpoint_thread = threading.Thread(
             target=self._checkpoint_thread,
             args=(model, optimizer, rank, epoch, is_partition, start_time)

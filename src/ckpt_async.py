@@ -94,13 +94,13 @@ class AsyncShardedCheckpoint:
             loop.run_until_complete(self._save_sharded_checkpoint(model, optimizer, rank, epoch, is_partition))
         finally:
             loop.close()
-        end_time = time.time()
-        elapsed_time = end_time - start_time
-        ckpt_file = os.path.join(self.save_dir, f"sharded_checkpoint_rank_{rank}_epoch_{epoch}.pth")
-        ckpt_size = os.path.getsize(ckpt_file) / (1024 * 1024)
-        speed = ckpt_size / elapsed_time
-        timestamp = datetime.now().strftime('%H:%M:%S')
-        print(f"[{timestamp}] Rank {rank} Checkpoint size {ckpt_size:.2f} MB, speed {speed:.2f} MB/s, elapsed {elapsed_time:.2f} sec.")
+        # end_time = time.time()
+        # elapsed_time = end_time - start_time
+        # ckpt_file = os.path.join(self.save_dir, f"sharded_checkpoint_rank_{rank}_epoch_{epoch}.pth")
+        # ckpt_size = os.path.getsize(ckpt_file) / (1024 * 1024)
+        # speed = ckpt_size / elapsed_time
+        # timestamp = datetime.now().strftime('%H:%M:%S')
+        # print(f"[{timestamp}] Rank {rank} Checkpoint size {ckpt_size:.2f} MB, speed {speed:.2f} MB/s, elapsed {elapsed_time:.2f} sec.")
 
     async def _save_sharded_checkpoint(self, model, optimizer, rank, epoch, is_partition):
         if is_partition:
@@ -111,17 +111,22 @@ class AsyncShardedCheckpoint:
         
         full_optimizer_state_dict = optimizer.state_dict()
         shard_optimizer_state_dict = {
-            'state': {p: full_optimizer_state_dict['state'][p] for group in full_optimizer_state_dict['param_groups'] for p in group['params'] if p in full_optimizer_state_dict['state']},
+            'state': {p: full_optimizer_state_dict['state'][p] for group in full_optimizer_state_dict['param_groups'] for p in group['params'] if p in full_optimizer_state_dict['state'] },
             'param_groups': full_optimizer_state_dict['param_groups']
         }
+        # traverse all the values in shard_optimizer_state_dict['state'] and convert them to cpu if they are tensors
+        for k, v in shard_optimizer_state_dict['state'].items():
+            if torch.is_tensor(v):
+                shard_optimizer_state_dict['state'][k] = v.cpu()
         
-        buffer = io.BytesIO()
-        current_loop = asyncio.get_event_loop()
+        # buffer = io.BytesIO()
+        # current_loop = asyncio.get_event_loop()
         self.allreduce_semaphore.release()
-        await current_loop.run_in_executor(self.executor, pickle.dump, {'model': shard_model_state_dict_cpu, 'optimizer': shard_optimizer_state_dict}, buffer)
-        buffer.seek(0)
-        ckpt_file = os.path.join(self.save_dir, f"sharded_checkpoint_rank_{rank}_epoch_{epoch}.pth")
-        async with aiofiles.open(ckpt_file, "wb") as f:
-            await f.write(buffer.read())
-        timestamp = datetime.now().strftime('%H:%M:%S')
-        print(f"[{timestamp}] Rank {rank} saved.")
+        print(f"rank {rank} finish snapshotting")
+        # await current_loop.run_in_executor(self.executor, pickle.dump, {'model': shard_model_state_dict_cpu, 'optimizer': shard_optimizer_state_dict}, buffer)
+        # buffer.seek(0)
+        # ckpt_file = os.path.join(self.save_dir, f"sharded_checkpoint_rank_{rank}_epoch_{epoch}.pth")
+        # async with aiofiles.open(ckpt_file, "wb") as f:
+        #     await f.write(buffer.read())
+        # timestamp = datetime.now().strftime('%H:%M:%S')
+        # print(f"[{timestamp}] Rank {rank} saved.")
