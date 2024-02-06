@@ -1,0 +1,18 @@
+{
+    "0": ["input_layer.weight", "input_layer.bias", "hidden_layers.0.weight", 
+    "hidden_layers.0.bias", "hidden_layers.4.weight", "hidden_layers.4.bias", 
+    "hidden_layers.8.weight", "hidden_layers.8.bias", "output_layer.weight", 
+    "output_layer.bias"],
+    "1": ["input_layer.weight", "input_layer.bias", "hidden_layers.1.weight", 
+    "hidden_layers.1.bias", "hidden_layers.5.weight", "hidden_layers.5.bias", 
+    "hidden_layers.9.weight", "hidden_layers.9.bias",  "output_layer.weight", 
+    "output_layer.bias"],
+    "2": ["input_layer.weight", "input_layer.bias", "hidden_layers.2.weight", 
+    "hidden_layers.2.bias", "hidden_layers.6.weight", "hidden_layers.6.bias", 
+    "hidden_layers.10.weight", "hidden_layers.10.bias", "output_layer.weight", 
+    "output_layer.bias"],
+    "3": ["input_layer.weight", "input_layer.bias", "hidden_layers.3.weight", 
+    "hidden_layers.3.bias", "hidden_layers.7.weight", "hidden_layers.7.bias", 
+    "hidden_layers.11.weight", "hidden_layers.11.bias",  "output_layer.weight", 
+    "output_layer.bias"]
+} 
