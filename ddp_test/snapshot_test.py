@@ -71,31 +71,24 @@ def train(rank, world_size, args):
                 for i, inputs in enumerate(tqdm(dataloader, desc='Iterations', leave=False)):
                     # rank0Print(rank, f"step {i}", CYAN)
                     inputs = inputs.to(rank)
-
                     # Forward pass
                     outputs = ddp_model(inputs)
                     labels = torch.randn(outputs.size()).to(rank)
                     loss = criterion(outputs, labels)
-
                     # Backward pass
                     loss.backward()
-
                     # Optimization step
                     optimizer.step()
-                    
                     if args.use_snapshot:
-                        async_ckpt.make_snapshot(model, optimizer, rank, epoch, True)
+                        async_ckpt.make_snapshot(model, optimizer, rank, epoch, use_copy_=args.use_copy, is_partition=True)
                     
         # print(prof.key_averages().table(sort_by="cuda_time_total", row_limit=10))
     # Get current date and time
+    rank0Print(rank, "Profiling finished", GREEN)
     now = datetime.now()
     # Format as a string
-    timestamp = now.strftime("%Y%m%d_%H%M%S")
-    
-    if args.use_snapshot:
-        prof_file_path = os.path.join(script_dir, "trace", f"{timestamp}_{rank}_trace_snapshot.json")
-    else:
-        prof_file_path = os.path.join(script_dir, "trace", f"{timestamp}_{rank}_trace_no_snapshot.json")
+    timestamp = now.strftime("%m%d_%H%M%S")
+    prof_file_path = os.path.join(script_dir, "trace", f"{timestamp}-rank_{rank}-use_copy_{args.use_copy}-use_snapshot_{args.use_snapshot}-trace.json")
     prof.export_chrome_trace(prof_file_path)
     cleanup()
 
@@ -111,6 +104,7 @@ def main():
     parser.add_argument('--data_size', default=512, type=int)
     parser.add_argument('--batch_size', default=128, type=int)
     parser.add_argument('--use_snapshot', action='store_true')
+    parser.add_argument('--use_copy', action='store_true')
     args = parser.parse_args()
 
     rank = int(os.environ['LOCAL_RANK'])
