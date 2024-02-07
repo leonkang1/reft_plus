@@ -56,24 +56,23 @@ def train(rank, world_size, args):
 
     dataset = RandomDataset(args.input_size, args.data_size)
     sampler = DistributedSampler(dataset)
-    dataloader = DataLoader(dataset, batch_size=args.batch_size, sampler=sampler)
+    dataloader = DataLoader(dataset, batch_size=args.batch_size, sampler=sampler, num_workers=40)
     # print the number of iterations of the dataloader
     rank0Print(rank, f"number of iterations: {len(dataloader)}", YELLOW)
     with open(os.path.join(script_dir, "../src/models/ddp_config_12.json"), "r") as f:
         config = json.load(f)
     async_ckpt = AsyncShardedCheckpoint(world_size, config, save_dir=os.path.join(script_dir, "checkpoints"))
-    for epoch in tqdm(range(args.epochs), desc=f'Rank {rank} Epochs'):
-        # rank0Print(rank, f"epoch {epoch}", YELLOW)
-        with profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA], 
-                 record_shapes=True) as prof:
-            with record_function("model_training"):
-
+    with profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA], 
+                 record_shapes=True, with_stack=True) as prof:
+        with record_function("model_training"):
+            for epoch in tqdm(range(args.epochs), desc=f'Rank {rank} Epochs'):
+                # rank0Print(rank, f"epoch {epoch}", YELLOW)
                 for i, inputs in enumerate(tqdm(dataloader, desc='Iterations', leave=False)):
                     # rank0Print(rank, f"step {i}", CYAN)
-                    inputs = inputs.to(rank)
+                    inputs = inputs.to(rank, non_blocking=True)
                     # Forward pass
                     outputs = ddp_model(inputs)
-                    labels = torch.randn(outputs.size()).to(rank)
+                    labels = torch.randn(outputs.size(), device=rank)
                     loss = criterion(outputs, labels)
                     # Backward pass
                     loss.backward()
@@ -81,10 +80,10 @@ def train(rank, world_size, args):
                     optimizer.step()
                     if args.use_snapshot:
                         async_ckpt.make_snapshot(model, optimizer, rank, epoch, use_copy_=args.use_copy, is_partition=True)
+                    prof.step()
                     
         # print(prof.key_averages().table(sort_by="cuda_time_total", row_limit=10))
     # Get current date and time
-    rank0Print(rank, "Profiling finished", GREEN)
     now = datetime.now()
     # Format as a string
     timestamp = now.strftime("%m%d_%H%M%S")
