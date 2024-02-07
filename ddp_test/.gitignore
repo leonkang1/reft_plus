@@ -1,4 +1,4 @@
 !/.gitignore
 *checkpoints*
-*test*
+ddp_test*
 trace
