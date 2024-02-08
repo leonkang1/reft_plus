@@ -69,7 +69,7 @@ def train(rank, world_size, args):
                 # rank0Print(rank, f"epoch {epoch}", YELLOW)
                 for i, inputs in enumerate(tqdm(dataloader, desc='Iterations', leave=False)):
                     # rank0Print(rank, f"step {i}", CYAN)
-                    inputs = inputs.to(rank, non_blocking=True)
+                    inputs = inputs.to(rank)
                     # Forward pass
                     outputs = ddp_model(inputs)
                     labels = torch.randn(outputs.size(), device=rank)
