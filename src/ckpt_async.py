@@ -62,6 +62,49 @@ class AsyncCheckpoint:
             await f.write(buffer.read())
         timestamp = datetime.now().strftime('%H:%M:%S')
         print(f"[{timestamp}] saved")
+        
+    def make_snapshot(self, model, optimizer, epoch, use_copy_=False):
+        start_time = time.time()
+        timestamp = datetime.now().strftime('%H:%M:%S')
+        with self.thread_lock:
+            asyncio.run(self.allreduce_semaphore.acquire())
+        
+        checkpoint_thread = threading.Thread(
+            target=self._snapshot_thread,
+            args=(model, optimizer, epoch, start_time, use_copy_)
+        )
+        checkpoint_thread.start()
+        
+    def _snapshot_thread(self, model, optimizer, epoch, start_time, use_copy_):
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            loop.run_until_complete(self._make_snapshot(model, optimizer, epoch, use_copy_))
+        finally:
+            loop.close()
+
+    async def _make_snapshot(self, model, optimizer, epoch, use_copy_):
+        if use_copy_:
+            for param_name, model_tensor_gpu in model.state_dict().items():
+                model_tensor_cpu = torch.empty_like(model_tensor_gpu, device='cpu')
+                model_tensor_cpu.copy_(model_tensor_gpu)
+            # torch.cuda.synchronize()
+        else:
+            cpu_state_dict = {key: value.cpu() for key, value in model.state_dict().items()}
+
+        optimizer_state_dict = optimizer.state_dict()
+        # traverse all the values in shard_optimizer_state_dict['state'] and convert them to cpu if they are tensors
+        for k, v in optimizer_state_dict['state'].items():
+            if torch.is_tensor(v):
+                if use_copy_: 
+                    optimizer_tensor_gpu = v
+                    optimizer_tensor_cpu = torch.empty_like(optimizer_tensor_gpu, device='cpu')
+                    optimizer_tensor_cpu.copy_(optimizer_tensor_gpu) 
+                else:
+                    optimizer_tensor_cpu = v.cpu()
+        # torch.cuda.synchronize()
+        self.allreduce_semaphore.release()
+        print(f"Finish snapshotting")
 
 
 class AsyncShardedCheckpoint:
@@ -154,7 +197,7 @@ class AsyncShardedCheckpoint:
                 for k in self.config[str(rank)]:
                     model_tensor_gpu = model.state_dict()[k]
                     model_tensor_cpu = torch.empty_like(model_tensor_gpu, device='cpu')
-                    model_tensor_cpu.copy_(model_tensor_gpu, non_blocking=True)
+                    model_tensor_cpu.copy_(model_tensor_gpu)
                     # torch.cuda.synchronize()
                     shard_model_state_dict_cpu[k] = model_tensor_cpu
             else:
@@ -166,7 +209,7 @@ class AsyncShardedCheckpoint:
                 for k in self.config[str(rank)]:
                     model_tensor_gpu = full_model_state_dict[k]
                     model_tensor_cpu = torch.empty_like(model_tensor_gpu, device='cpu')
-                    model_tensor_cpu.copy_(model_tensor_gpu, non_blocking=True)
+                    model_tensor_cpu.copy_(model_tensor_gpu)
                     # torch.cuda.synchronize()
                     shard_model_state_dict_cpu[k] = model_tensor_cpu
             else:
@@ -184,7 +227,7 @@ class AsyncShardedCheckpoint:
                 if use_copy_: 
                     optimizer_tensor_gpu = full_optimizer_state_dict['state'][k]
                     optimizer_tensor_cpu = torch.empty_like(optimizer_tensor_gpu, device='cpu')
-                    optimizer_tensor_cpu.copy_(optimizer_tensor_gpu, non_blocking=True) 
+                    optimizer_tensor_cpu.copy_(optimizer_tensor_gpu) 
                     # torch.cuda.synchronize()
                     shard_optimizer_state_dict['state'][k] = optimizer_tensor_cpu
                 else:
