@@ -1,0 +1,180 @@
+step: 0
+input transfer time: 0.0013106651604175568
+zero_grad time: 0.000226486474275589
+forward pass time: 5.000462212599814
+label generation time: 0.008369122631847858
+loss calculation time: 0.06446353159844875
+backward pass time: 4.570467185229063
+optimization step time: 0.017154386267066002
+step time: 9.662635616958141
+step: 1
+input transfer time: 0.09258565492928028
+zero_grad time: 0.00034525152295827866
+forward pass time: 0.2130621364340186
+label generation time: 0.00011132098734378815
+loss calculation time: 0.0014045126736164093
+backward pass time: 0.0048775505274534225
+optimization step time: 0.0013888608664274216
+step time: 0.31382492929697037
+step: 2
+input transfer time: 0.23971477337181568
+zero_grad time: 0.0004048394039273262
+forward pass time: 0.0020464975386857986
+label generation time: 6.627663969993591e-05
+loss calculation time: 0.0001740027219057083
+backward pass time: 0.004616172984242439
+optimization step time: 0.0008884519338607788
+step time: 0.24795239698141813
+step: 3
+input transfer time: 0.3635880369693041
+zero_grad time: 0.000560663640499115
+forward pass time: 0.002054658718407154
+label generation time: 5.28460368514061e-05
+loss calculation time: 0.00017133541405200958
+backward pass time: 0.004526171833276749
+optimization step time: 0.0011216970160603523
+step time: 0.37211960554122925
+step: 4
+input transfer time: 0.36295172199606895
+zero_grad time: 0.00019854586571455002
+forward pass time: 0.001708037219941616
+label generation time: 3.2531097531318665e-05
+loss calculation time: 0.00010001659393310547
+backward pass time: 0.004376858472824097
+optimization step time: 0.0007588258013129234
+step time: 0.3701557293534279
+step: 5
+input transfer time: 0.36422352865338326
+zero_grad time: 0.00041534844785928726
+forward pass time: 0.0019563138484954834
+label generation time: 6.41699880361557e-05
+loss calculation time: 0.00018479488790035248
+backward pass time: 0.004594367928802967
+optimization step time: 0.0008392436429858208
+step time: 0.37231807317584753
+step: 6
+input transfer time: 0.36361308954656124
+zero_grad time: 0.0003930088132619858
+forward pass time: 0.0019859718158841133
+label generation time: 6.521027535200119e-05
+loss calculation time: 0.00016493070870637894
+backward pass time: 0.004621810279786587
+optimization step time: 0.0008944030851125717
+step time: 0.37177952472120523
+step: 7
+input transfer time: 0.3633668413385749
+zero_grad time: 0.0005043847486376762
+forward pass time: 0.003263401798903942
+label generation time: 8.03973525762558e-05
+loss calculation time: 0.00026790425181388855
+backward pass time: 0.006895201280713081
+optimization step time: 0.0009527178481221199
+step time: 0.37538627441972494
+step: 8
+input transfer time: 0.3598356703296304
+zero_grad time: 0.0004270365461707115
+forward pass time: 0.002002336084842682
+label generation time: 6.536487489938736e-05
+loss calculation time: 0.00017685815691947937
+backward pass time: 0.00456052552908659
+optimization step time: 0.0008371118456125259
+step time: 0.3679502848535776
+step: 9
+input transfer time: 0.362099920399487
+zero_grad time: 0.0005640750750899315
+forward pass time: 0.0019809389486908913
+label generation time: 6.853416562080383e-05
+loss calculation time: 0.00020114053040742874
+backward pass time: 0.004603898152709007
+optimization step time: 0.0008642459288239479
+step time: 0.37043140549212694
+step: 10
+input transfer time: 0.36341594997793436
+zero_grad time: 0.0005098897963762283
+forward pass time: 0.0027575502172112465
+label generation time: 0.00013307668268680573
+loss calculation time: 0.000269521027803421
+backward pass time: 0.007725151255726814
+optimization step time: 0.001980242319405079
+step time: 0.37686692737042904
+step: 11
+input transfer time: 0.3579061022028327
+zero_grad time: 0.00035550259053707123
+forward pass time: 0.0019026631489396095
+label generation time: 6.0626305639743805e-05
+loss calculation time: 0.00017406605184078217
+backward pass time: 0.004542972892522812
+optimization step time: 0.0008337497711181641
+step time: 0.36581732146441936
+step: 12
+input transfer time: 0.3628578493371606
+zero_grad time: 0.00021480116993188858
+forward pass time: 0.002205735072493553
+label generation time: 3.705266863107681e-05
+loss calculation time: 0.00012041814625263214
+backward pass time: 0.0043936241418123245
+optimization step time: 0.0007634842768311501
+step time: 0.370623423717916
+step: 13
+input transfer time: 0.36364219803363085
+zero_grad time: 0.00037633441388607025
+forward pass time: 0.001970243640244007
+label generation time: 6.456859409809113e-05
+loss calculation time: 0.00018614623695611954
+backward pass time: 0.00458111148327589
+optimization step time: 0.0008442234247922897
+step time: 0.37170569133013487
+step: 14
+input transfer time: 0.36297223065048456
+zero_grad time: 0.0006237626075744629
+forward pass time: 0.0021686097607016563
+label generation time: 8.202437311410904e-05
+loss calculation time: 0.00022611767053604126
+backward pass time: 0.004659174010157585
+optimization step time: 0.0009360974654555321
+step time: 0.3717220267280936
+step: 15
+input transfer time: 0.363011603243649
+zero_grad time: 0.00039174314588308334
+forward pass time: 0.002021883614361286
+label generation time: 7.356610149145126e-05
+loss calculation time: 0.00018294714391231537
+backward pass time: 0.004625220783054829
+optimization step time: 0.0008887359872460365
+step time: 0.3712363075464964
+step: 16
+input transfer time: 0.3633116176351905
+zero_grad time: 0.000383744016289711
+forward pass time: 0.002430301159620285
+label generation time: 7.029902189970016e-05
+loss calculation time: 0.0001924252137541771
+backward pass time: 0.005329560488462448
+optimization step time: 0.000885949470102787
+step time: 0.3726487457752228
+step: 17
+input transfer time: 0.36229695938527584
+zero_grad time: 0.00040422193706035614
+forward pass time: 0.002409873530268669
+label generation time: 7.059331983327866e-05
+loss calculation time: 0.00019684620201587677
+backward pass time: 0.005619237199425697
+optimization step time: 0.0008661607280373573
+step time: 0.37191017996519804
+step: 18
+input transfer time: 0.361931761726737
+zero_grad time: 0.0004354473203420639
+forward pass time: 0.0020304499194025993
+label generation time: 6.649643182754517e-05
+loss calculation time: 0.00017502810806035995
+backward pass time: 0.004544461145997047
+optimization step time: 0.000855468213558197
+step time: 0.3700822629034519
+step: 19
+input transfer time: 0.36343200877308846
+zero_grad time: 0.00022774003446102142
+forward pass time: 0.0017972076311707497
+label generation time: 3.747548907995224e-05
+loss calculation time: 0.0001224428415298462
+backward pass time: 0.0043818149715662
+optimization step time: 0.0007955301553010941
+step time: 0.3708227276802063

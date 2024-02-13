@@ -63,25 +63,30 @@ class AsyncCheckpoint:
         timestamp = datetime.now().strftime('%H:%M:%S')
         print(f"[{timestamp}] saved")
         
-    def make_snapshot(self, model, optimizer, epoch, use_copy_=False):
-        start_time = time.time()
-        timestamp = datetime.now().strftime('%H:%M:%S')
+    def make_snapshot(self, model, optimizer, epoch, use_timer, step_cnt, timer_record_file, use_copy_=False):
+
         with self.thread_lock:
             asyncio.run(self.allreduce_semaphore.acquire())
         
         checkpoint_thread = threading.Thread(
             target=self._snapshot_thread,
-            args=(model, optimizer, epoch, start_time, use_copy_)
+            args=(model, optimizer, epoch, use_copy_, use_timer, step_cnt, timer_record_file)
         )
         checkpoint_thread.start()
         
-    def _snapshot_thread(self, model, optimizer, epoch, start_time, use_copy_):
+    def _snapshot_thread(self, model, optimizer, epoch, use_copy_, use_timer, step_cnt, timer_record_file):
+        if use_timer:
+            timer_record_file.write(f"step: {step_cnt}\n")
+            start_time = time.perf_counter()
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         try:
             loop.run_until_complete(self._make_snapshot(model, optimizer, epoch, use_copy_))
         finally:
             loop.close()
+        if use_timer:
+            end_time = time.perf_counter()
+            timer_record_file.write(f"snapshot time: {end_time - start_time}\n")
 
     async def _make_snapshot(self, model, optimizer, epoch, use_copy_):
         if use_copy_:
@@ -104,7 +109,6 @@ class AsyncCheckpoint:
                     optimizer_tensor_cpu = v.cpu()
         # torch.cuda.synchronize()
         self.allreduce_semaphore.release()
-        print(f"Finish snapshotting")
 
 
 class AsyncShardedCheckpoint:

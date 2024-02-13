@@ -1,0 +1,82 @@
+Namespace(async_snapshot=True, batch_size=1024, data_size=20480, enable_profiling=False, epochs=1, input_size=512, non_blocking_copy=False, seed=42, use_copy=True, use_snapshot=True, use_timer=True)
+step: 0
+input transfer time: 0.000954299233853817
+zero_grad time: 0.00016760919243097305
+forward pass time: 3.4781521540135145
+label generation time: 0.0001385807991027832
+loss calculation time: 0.0013843439519405365
+backward pass time: 0.09062730800360441
+optimization step time: 0.001982571557164192
+step time: 3.5734743690118194
+step: 1
+input transfer time: 0.2407485144212842
+zero_grad time: 0.00025329459458589554
+forward pass time: 0.5813474608585238
+label generation time: 5.627050995826721e-05
+loss calculation time: 0.025881996378302574
+backward pass time: 1.3671679673716426
+optimization step time: 0.0009980183094739914
+step time: 2.216493673622608
+step: 2
+input transfer time: 0.022556661628186703
+zero_grad time: 0.00023371633142232895
+forward pass time: 0.5976081257686019
+label generation time: 6.114132702350616e-05
+loss calculation time: 0.024928763508796692
+backward pass time: 1.3112470861524343
+optimization step time: 0.0009346557781100273
+step time: 1.9576169773936272
+step: 3
+input transfer time: 0.024648163467645645
+zero_grad time: 0.00021933205425739288
+forward pass time: 0.5454396288841963
+label generation time: 0.002276361919939518
+loss calculation time: 0.02487084176391363
+backward pass time: 1.3709736661985517
+optimization step time: 0.0008863760158419609
+step time: 1.969345225021243
+step: 4
+input transfer time: 0.009692673571407795
+zero_grad time: 0.00023498665541410446
+forward pass time: 0.5681418841704726
+label generation time: 0.02495866734534502
+loss calculation time: 0.00017614290118217468
+backward pass time: 1.3289232086390257
+optimization step time: 0.0009365221485495567
+step time: 1.933096269145608
+step: 5
+input transfer time: 0.03050822764635086
+zero_grad time: 0.0002515008673071861
+forward pass time: 0.567793358117342
+label generation time: 0.02488429844379425
+loss calculation time: 0.0001932624727487564
+backward pass time: 1.3313897540792823
+optimization step time: 0.0009376639500260353
+step time: 1.9560014083981514
+step: 6
+input transfer time: 0.024655556306242943
+zero_grad time: 0.00022854283452033997
+forward pass time: 0.5221778014674783
+label generation time: 0.024941356852650642
+loss calculation time: 0.00017481204122304916
+backward pass time: 1.3941687159240246
+optimization step time: 0.0009055687114596367
+step time: 1.9672886515036225
+step: 7
+input transfer time: 0.0137045718729496
+zero_grad time: 0.0002278173342347145
+forward pass time: 0.555340226739645
+label generation time: 5.269702523946762e-05
+loss calculation time: 0.025592677295207977
+backward pass time: 1.4004904991015792
+optimization step time: 0.000979517586529255
+step time: 1.9964321460574865
+step: 8
+input transfer time: 0.008146768435835838
+zero_grad time: 0.00028910767287015915
+forward pass time: 0.5620783809572458
+label generation time: 4.810560494661331e-05
+loss calculation time: 0.00041607487946748734
+backward pass time: 1.1942209573462605
+optimization step time: 0.05816033948212862
+step time: 1.8233994068577886
