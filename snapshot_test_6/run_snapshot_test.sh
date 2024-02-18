@@ -1,5 +1,5 @@
 # Run snapshotting test
-batch_size=1024
+batch_size=4096
 data_size=$((100 * ${batch_size}))
 num_epochs=1
 seed=42
@@ -172,7 +172,8 @@ run_options_8() {
     done
 }
 
-run_options_7
+run_options_7 &
+run_options_8 &
 
 
 wait
