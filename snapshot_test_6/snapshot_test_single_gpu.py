@@ -161,7 +161,7 @@ def train(args):
                         if not args.use_timer:
                             snapshot_timer_record_file = None
                         if args.async_snapshot:
-                            checkpoint_thread = async_ckpt.make_snapshot(model, optimizer, epoch, use_timer=args.use_timer, step_cnt=step_cnt, timer_record_file=snapshot_timer_record_file, use_copy_=args.use_copy, snapshot_stream=snapshot_stream, device=device, non_blocking_copy=args.non_blocking_copy)
+                            checkpoint_thread = async_ckpt.make_snapshot(model, optimizer, epoch, use_timer=args.use_timer, step_cnt=step_cnt, timer_record_file=snapshot_timer_record_file, use_copy_=args.use_copy, snapshot_stream=snapshot_stream, device=device, non_blocking_copy=args.non_blocking_copy, use_pin_memory=args.use_pin_memory)
                             async_checkpoint_thread_list.append(checkpoint_thread)
                         else:
                             non_async_make_snapshot(model, optimizer, args.use_copy, args.use_timer, step_cnt, snapshot_timer_record_file, args.non_blocking_copy, snapshot_stream, device)
@@ -213,6 +213,7 @@ def main():
     parser.add_argument('--use_timer', action='store_true')
     parser.add_argument('--use_synthetic_input', action='store_true')
     parser.add_argument('--option_num', type=int)
+    parser.add_argument('--use_pin_memory', action='store_true')
     args = parser.parse_args()
     
     nprint(args, CYAN)

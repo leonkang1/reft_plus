@@ -63,24 +63,24 @@ class AsyncCheckpoint:
         timestamp = datetime.now().strftime('%H:%M:%S')
         print(f"[{timestamp}] saved")
         
-    def make_snapshot(self, model, optimizer, epoch, use_timer, step_cnt, timer_record_file, use_copy_, snapshot_stream, device, non_blocking_copy):
+    def make_snapshot(self, model, optimizer, epoch, use_timer, step_cnt, timer_record_file, use_copy_, snapshot_stream, device, non_blocking_copy, use_pin_memory):
         # with self.thread_lock:
         #     asyncio.run(self.allreduce_semaphore.acquire())
 
         checkpoint_thread = threading.Thread(
             target=self._snapshot_thread,
-            args=(model, optimizer, epoch, use_copy_, use_timer, step_cnt, timer_record_file, snapshot_stream, device, non_blocking_copy)
+            args=(model, optimizer, epoch, use_copy_, use_timer, step_cnt, timer_record_file, snapshot_stream, device, non_blocking_copy, use_pin_memory)
         )
         checkpoint_thread.start()
         return checkpoint_thread
         
-    def _snapshot_thread(self, model, optimizer, epoch, use_copy_, use_timer, step_cnt, timer_record_file, snapshot_stream, device, non_blocking_copy):
+    def _snapshot_thread(self, model, optimizer, epoch, use_copy_, use_timer, step_cnt, timer_record_file, snapshot_stream, device, non_blocking_copy, use_pin_memory):
         if use_timer and step_cnt > 10:
             start_time = time.perf_counter()
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         try:
-            loop.run_until_complete(self._make_snapshot(model, optimizer, epoch, use_copy_, snapshot_stream, device, non_blocking_copy))
+            loop.run_until_complete(self._make_snapshot(model, optimizer, epoch, use_copy_, snapshot_stream, device, non_blocking_copy, use_pin_memory))
         finally:
             loop.close()
         if use_timer and step_cnt > 10:
@@ -88,12 +88,14 @@ class AsyncCheckpoint:
             timer_record_file.write(f"step: {step_cnt}\n")
             timer_record_file.write(f"snapshot time: {end_time - start_time}\n")
 
-    async def _make_snapshot(self, model, optimizer, epoch, use_copy_, snapshot_stream, device, non_blocking_copy):
+    async def _make_snapshot(self, model, optimizer, epoch, use_copy_, snapshot_stream, device, non_blocking_copy, use_pin_memory):
         snapshot_stream.wait_stream(torch.cuda.default_stream(device))
         with torch.cuda.stream(snapshot_stream):
             if use_copy_:
                 for param_name, model_tensor_gpu in model.state_dict().items():
                     model_tensor_cpu = torch.empty_like(model_tensor_gpu, device='cpu')
+                    if use_pin_memory:
+                        model_tensor_cpu = model_tensor_cpu.pin_memory()
                     model_tensor_cpu.copy_(model_tensor_gpu, non_blocking=non_blocking_copy)
                 # torch.cuda.synchronize()
             else:
@@ -106,6 +108,8 @@ class AsyncCheckpoint:
                     if use_copy_: 
                         optimizer_tensor_gpu = v
                         optimizer_tensor_cpu = torch.empty_like(optimizer_tensor_gpu, device='cpu')
+                        if use_pin_memory:
+                            optimizer_tensor_cpu = optimizer_tensor_cpu.pin_memory()
                         optimizer_tensor_cpu.copy_(optimizer_tensor_gpu, non_blocking=non_blocking_copy) 
                     else:
                         optimizer_tensor_cpu = v.cpu()

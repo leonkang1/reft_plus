@@ -148,12 +148,31 @@ options_7=" \
 
 run_options_7() {
     for i in $(seq 1 ${times}); do
-        CUDA_VISIBLE_DEVICES=3 python snapshot_test_single_gpu.py ${options_7}
+        CUDA_VISIBLE_DEVICES=2 python snapshot_test_single_gpu.py ${options_7}
     done
 }
 
-run_options_5 &
-run_options_7 &
+options_8=" \
+    --batch_size ${batch_size} \
+    --data_size ${data_size} \
+    --epochs ${num_epochs} \
+    --seed ${seed} \
+    --enable_profiling \
+    --use_snapshot \
+    --use_copy \
+    --async_snapshot \
+    --option_num 8 \
+    --non_blocking_copy \
+    --use_pin_memory
+"
+
+run_options_8() {
+    for i in $(seq 1 ${times}); do
+        CUDA_VISIBLE_DEVICES=3 python snapshot_test_single_gpu.py ${options_8}
+    done
+}
+
+run_options_7
 
 
 wait
