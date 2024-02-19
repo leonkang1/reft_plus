@@ -26,7 +26,7 @@ from async_snapshot import AsyncCheckpoint
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
 
-def non_async_make_snapshot(model, optimizer, use_copy_, use_timer, step_cnt, timer_record_file, non_blocking_copy, snapshot_stream, device):
+def non_async_make_snapshot(model, optimizer, use_copy_, use_timer, step_cnt, timer_record_file, non_blocking_copy, snapshot_stream, device, use_pin_memory):
     if use_timer and step_cnt > 10:
         start_time = time.perf_counter()
     snapshot_stream.wait_stream(torch.cuda.default_stream(device))
@@ -34,7 +34,9 @@ def non_async_make_snapshot(model, optimizer, use_copy_, use_timer, step_cnt, ti
         if use_copy_:
             for param_name, model_tensor_gpu in model.state_dict().items():
                 model_tensor_cpu = torch.empty_like(model_tensor_gpu, device='cpu')
-                model_tensor_cpu.copy_(model_tensor_gpu, non_blocking=non_blocking_copy) #pin_memory
+                if use_pin_memory:
+                    model_tensor_cpu = model_tensor_cpu.pin_memory()
+                model_tensor_cpu.copy_(model_tensor_gpu, non_blocking=non_blocking_copy) 
             # torch.cuda.synchronize()
         else:
             cpu_state_dict = {key: value.cpu() for key, value in model.state_dict().items()}
@@ -46,6 +48,8 @@ def non_async_make_snapshot(model, optimizer, use_copy_, use_timer, step_cnt, ti
                 if use_copy_: 
                     optimizer_tensor_gpu = v
                     optimizer_tensor_cpu = torch.empty_like(optimizer_tensor_gpu, device='cpu')
+                    if use_pin_memory:
+                        optimizer_tensor_cpu = optimizer_tensor_cpu.pin_memory()
                     optimizer_tensor_cpu.copy_(optimizer_tensor_gpu, non_blocking=non_blocking_copy) 
                 else:
                     optimizer_tensor_cpu = v.cpu()
@@ -164,7 +168,7 @@ def train(args):
                             checkpoint_thread = async_ckpt.make_snapshot(model, optimizer, epoch, use_timer=args.use_timer, step_cnt=step_cnt, timer_record_file=snapshot_timer_record_file, use_copy_=args.use_copy, snapshot_stream=snapshot_stream, device=device, non_blocking_copy=args.non_blocking_copy, use_pin_memory=args.use_pin_memory)
                             async_checkpoint_thread_list.append(checkpoint_thread)
                         else:
-                            non_async_make_snapshot(model, optimizer, args.use_copy, args.use_timer, step_cnt, snapshot_timer_record_file, args.non_blocking_copy, snapshot_stream, device)
+                            non_async_make_snapshot(model, optimizer, args.use_copy, args.use_timer, step_cnt, snapshot_timer_record_file, args.non_blocking_copy, snapshot_stream, device, args.use_pin_memory)
                         
                     if args.use_timer and step_cnt > 10:
                         end_time = time.perf_counter()

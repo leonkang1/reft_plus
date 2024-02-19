@@ -172,7 +172,28 @@ run_options_8() {
     done
 }
 
-run_options_7 &
+# based on 8, use timer
+options_9=" \
+    --batch_size ${batch_size} \
+    --data_size ${data_size} \
+    --epochs ${num_epochs} \
+    --seed ${seed} \
+    --use_timer \
+    --use_snapshot \
+    --use_copy \
+    --async_snapshot \
+    --option_num 9 \
+    --non_blocking_copy \
+    --use_pin_memory
+"
+
+run_options_9() {
+    for i in $(seq 1 ${times}); do
+        CUDA_VISIBLE_DEVICES=3 python snapshot_test_single_gpu.py ${options_9}
+    done
+}
+
+run_options_4 &
 run_options_8 &
 
 
