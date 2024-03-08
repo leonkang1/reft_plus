@@ -1,0 +1,6 @@
+test*.py
+benchmarks
+.*
+!/.gitignore
+!/.gitkeep
+**/trace/

@@ -1,0 +1,2 @@
+ This folder is based on snapshot_test_2
+This folder is for testing if using cuda.Stream can make computation and memcpy asynchronous in gpu level.

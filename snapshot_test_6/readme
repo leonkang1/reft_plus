@@ -1,0 +1,3 @@
+This folder is based on snapshot_test_2
+This folder is for testing if the synchronization in training stream and snapshot stream can be 
+removed by non blocking and pin memory

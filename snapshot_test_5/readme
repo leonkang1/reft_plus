@@ -1,0 +1,2 @@
+ This folder is based on snapshot_test_2
+This folder is for testing if the abnormal phenomenon in profiler trace is because the asynchronous execution of gpu operations.
