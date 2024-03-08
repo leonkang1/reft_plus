@@ -1,5 +1,5 @@
 batch_size=2048
-data_size=$((400 * ${batch_size}))
+data_size=$((100 * ${batch_size}))
 num_epochs=1
 seed=42
 

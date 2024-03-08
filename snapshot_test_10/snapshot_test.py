@@ -43,6 +43,8 @@ class RandomDataset(Dataset):
 
 def setup(rank, world_size):
     dist.init_process_group("nccl", rank=rank, world_size=world_size)
+    torch.cuda.set_device(rank)
+
 
 def cleanup():
     dist.destroy_process_group()
@@ -62,7 +64,7 @@ def train(rank, world_size, args):
     dataloader = DataLoader(dataset, batch_size=args.batch_size, sampler=sampler, num_workers=40)
     # print the number of iterations of the dataloader
     async_ckpt = AsyncCheckpoint(save_dir=os.path.join(script_dir, "checkpoints"))
-    snapshot_stream = torch.cuda.Stream()
+    snapshot_stream = torch.cuda.Stream(device=rank)
     
     for epoch in tqdm(range(args.epochs)):
         # rank0Print(rank, f"epoch {epoch}", YELLOW)
@@ -145,10 +147,10 @@ def train(rank, world_size, args):
     
     if args.enable_profiling:
         time_stamp = datetime.datetime.now().strftime("%m%d-%H%M%S")
-        trace_arg_file_path = os.path.join(script_dir, "trace", f"rank_{rank}_{time_stamp}_option_{args.option_num}_trace_arg.txt")
+        trace_arg_file_path = os.path.join(script_dir, "trace", f"{time_stamp}_rank_{rank}_option_{args.option_num}_trace_arg.txt")
         trace_arg_file = open(trace_arg_file_path, "w")
         trace_arg_file.write(str(args) + '\n')            
-        prof.export_chrome_trace(os.path.join(script_dir, "trace", f"rank_{rank}_{time_stamp}_option_{args.option_num}_trace.json"))
+        prof.export_chrome_trace(os.path.join(script_dir, "trace", f"{time_stamp}_rank_{rank}_option_{args.option_num}_trace.json"))
         
     cleanup()
 
