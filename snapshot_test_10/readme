@@ -1,0 +1,3 @@
+This folder is based on snapshot_test_9
+This folder is for testing the effect of moving position of calling async snapshot to
+right after memcpy HtoD
