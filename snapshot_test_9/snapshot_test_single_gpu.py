@@ -123,16 +123,6 @@ def train(args):
                         step_start_time = time.perf_counter()
                         start_time = time.perf_counter()
                     inputs = inputs.to(device)
-                    if i != 0:
-                        state_dict = model.state_dict()
-                        if args.use_snapshot:
-                            if not args.use_timer:
-                                snapshot_timer_record_file = None
-                            if args.async_snapshot:
-                                checkpoint_thread = async_ckpt.make_snapshot(state_dict, epoch, use_timer=args.use_timer, step_cnt=step_cnt, timer_record_file=snapshot_timer_record_file, use_copy_=args.use_copy, snapshot_stream=snapshot_stream, device=device, non_blocking_copy=args.non_blocking_copy, use_pin_memory=args.use_pin_memory)
-                                async_checkpoint_thread_list.append(checkpoint_thread)
-                            else:
-                                non_async_make_snapshot(model, optimizer, args.use_copy, args.use_timer, step_cnt, snapshot_timer_record_file, args.non_blocking_copy, snapshot_stream, device, args.use_pin_memory)
                     if args.use_timer and step_cnt > 10:
                         end_time = time.perf_counter()
                         timer_record_file.write(f"input transfer time: {end_time - start_time}\n")
@@ -171,6 +161,15 @@ def train(args):
                         timer_record_file.write(f"optimization step time: {end_time - start_time}\n")
                         timer_record_file.write(f"step time: {end_time - step_start_time}\n")
                         start_time = time.perf_counter()
+                    state_dict = model.state_dict()
+                    if args.use_snapshot:
+                        if not args.use_timer:
+                            snapshot_timer_record_file = None
+                        if args.async_snapshot:
+                            checkpoint_thread = async_ckpt.make_snapshot(state_dict, epoch, use_timer=args.use_timer, step_cnt=step_cnt, timer_record_file=snapshot_timer_record_file, use_copy_=args.use_copy, snapshot_stream=snapshot_stream, device=device, non_blocking_copy=args.non_blocking_copy, use_pin_memory=args.use_pin_memory)
+                            async_checkpoint_thread_list.append(checkpoint_thread)
+                        else:
+                            non_async_make_snapshot(model, optimizer, args.use_copy, args.use_timer, step_cnt, snapshot_timer_record_file, args.non_blocking_copy, snapshot_stream, device, args.use_pin_memory)
                         
                     if args.use_timer and step_cnt > 10:
                         end_time = time.perf_counter()
