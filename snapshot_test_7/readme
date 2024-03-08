@@ -1,0 +1,2 @@
+This folder is based on snapshot_test_6
+This folder is for testing the effect of using one stream for each async snapshot operation.
