@@ -104,7 +104,10 @@ def get_batch(data_iterator):
         data = next(data_iterator)
     else:
         data = None
+    # print(f"Data: {data['text'].shape}")
+    # the shape here is [batch_size, seq_len], so it seems that the batch size is already handled by the data loader
     data_b = tensor_parallel.broadcast_data(keys, data, datatype)
+    
 
     # Unpack.
     tokens_ = data_b['text'].long()
@@ -300,6 +303,19 @@ def forward_step(data_iterator, model):
     # Output_tensor stores the standard loss, loos_func calculates the total loss.
     return output_tensor, partial(loss_func, loss_mask, moe_loss, mos_loss)
 
+class SyntheticDataset(torch.utils.data.Dataset):
+    def __init__(self, num_samples, seq_length, vocab_size):
+        self.num_samples = num_samples
+        self.seq_length = seq_length
+        self.vocab_size = vocab_size
+
+    def __len__(self):
+        return self.num_samples
+
+    def __getitem__(self, idx):
+        # Generate synthetic input_ids and attention_mask
+        input_ids = torch.randint(self.vocab_size, (self.seq_length,))
+        return {'text': input_ids}
 
 def train_valid_test_datasets_provider(train_val_test_num_samples):
     """Build train, valid, and test datasets."""
@@ -307,18 +323,22 @@ def train_valid_test_datasets_provider(train_val_test_num_samples):
 
     print_rank_0('> building train, validation, and test datasets '
                  'for GPT ...')
-    train_ds, valid_ds, test_ds = build_train_valid_test_datasets(
-        data_prefix=args.data_path,
-        data_impl=args.data_impl,
-        splits_string=args.split,
-        train_valid_test_num_samples=train_val_test_num_samples,
-        seq_length=args.seq_length,
-        seed=args.seed,
-        skip_warmup=(not args.mmap_warmup),
-        train_data_prefix=args.train_data_path,
-        valid_data_prefix=args.valid_data_path,
-        test_data_prefix=args.test_data_path,
-        data_cache_path=args.data_cache_path)
+    # train_ds, valid_ds, test_ds = build_train_valid_test_datasets(
+    #     data_prefix=args.data_path,
+    #     data_impl=args.data_impl,
+    #     splits_string=args.split,
+    #     train_valid_test_num_samples=train_val_test_num_samples,
+    #     seq_length=args.seq_length,
+    #     seed=args.seed,
+    #     skip_warmup=(not args.mmap_warmup),
+    #     train_data_prefix=args.train_data_path,
+    #     valid_data_prefix=args.valid_data_path,
+    #     test_data_prefix=args.test_data_path,
+    #     data_cache_path=args.data_cache_path)
+    vocab_size = 50257 
+    train_ds = SyntheticDataset(train_val_test_num_samples[0], args.seq_length, vocab_size)
+    valid_ds = SyntheticDataset(train_val_test_num_samples[1], args.seq_length, vocab_size)
+    test_ds = SyntheticDataset(train_val_test_num_samples[2], args.seq_length, vocab_size)
     print_rank_0("> finished creating GPT datasets ...")
 
     return train_ds, valid_ds, test_ds
@@ -352,6 +372,7 @@ def git_ds_info():
 
 
 if __name__ == "__main__":
+    print("Running pretrain_gpt.py")
     git_ds_info()
     pretrain(train_valid_test_datasets_provider,
              model_provider,

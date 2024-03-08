@@ -1,5 +1,5 @@
 # Run snapshotting test
-batch_size=4096
+batch_size=2048
 data_size=$((100 * ${batch_size}))
 num_epochs=1
 seed=42
@@ -91,7 +91,7 @@ options_4=" \
 
 run_options_4() {
     for i in $(seq 1 ${times}); do
-        CUDA_VISIBLE_DEVICES=0 python snapshot_test_single_gpu.py ${options_4}
+        CUDA_VISIBLE_DEVICES=2 python snapshot_test_single_gpu.py ${options_4}
     done
 }
 
@@ -200,4 +200,3 @@ run_options_8 &
 wait
 
 echo "All scripts have completed."
-

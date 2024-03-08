@@ -1517,13 +1517,21 @@ def build_train_valid_test_data_loaders(
         # Build datasets.
         train_ds, valid_ds, test_ds = build_train_valid_test_datasets(
             build_train_valid_test_datasets_provider)
-
         # Build dataloders.
         train_dataloader = build_pretraining_data_loader(
             train_ds, args.consumed_train_samples)
-        valid_dataloader = build_pretraining_data_loader(
-            valid_ds, args.consumed_valid_samples)
-        test_dataloader = build_pretraining_data_loader(test_ds, 0)
+        #! original code
+        # valid_dataloader = build_pretraining_data_loader(
+        #     valid_ds, args.consumed_valid_samples)
+        # test_dataloader = build_pretraining_data_loader(test_ds, 0)
+        
+        if args.eval_iters > 0:
+            valid_dataloader = build_pretraining_data_loader(
+                valid_ds, args.consumed_valid_samples)
+            test_dataloader = build_pretraining_data_loader(test_ds, 0)
+        else:
+            valid_dataloader = None
+            test_dataloader = None
 
         # Flags to know if we need to do training/validation/testing.
         do_train = train_dataloader is not None and args.train_iters > 0

@@ -3,3 +3,4 @@ benchmarks
 .*
 !/.gitignore
 !/.gitkeep
+**/trace/

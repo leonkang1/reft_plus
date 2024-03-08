@@ -6,6 +6,8 @@
 ## Baseline 300B tokens (100%):
 # lr=2.0e-4
 # train_tokens_in_billion=300
+# # export CUDA_VISIBLE_DEVICES=0
+# # export PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:50
 # bash ds_pretrain_gpt_1.3B_dense_base_script.sh ${lr} \
 #     ${train_tokens_in_billion}
 ###############################################################################
@@ -16,10 +18,11 @@
 #     ${train_tokens_in_billion}
 ###############################################################################
 ## Baseline 150B tokens (50%):
-# lr=4.0e-4
-# train_tokens_in_billion=150
-# bash ds_pretrain_gpt_1.3B_dense_base_script.sh ${lr} \
-#     ${train_tokens_in_billion}
+lr=4.0e-4
+train_tokens_in_billion=150
+export CUDA_VISIBLE_DEVICES=3
+bash ds_pretrain_gpt_1.3B_dense_base_script.sh ${lr} \
+    ${train_tokens_in_billion}
 ###############################################################################
 ### Curriculum learning (CL) + Random layerwise token dropping (random-LTD).
 ### DeepSpeed Data Efficiency's best composed solution.
