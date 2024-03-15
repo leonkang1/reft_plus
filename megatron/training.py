@@ -1238,18 +1238,18 @@ def train(forward_step_func, model, optimizer, opt_param_scheduler,
                         optimizer,
                         opt_param_scheduler,
                         config)
-            # model_state_dict = model[0].state_dict()
-            # # assert args.num_layers can be divided by args.data_parallel_size * (args.data_parallel_size - 1)
-            # assert args.num_layers % (args.data_parallel_size * (args.data_parallel_size - 1)) == 0
-            # # Get the 2nd key of model_state_dict
-            # start_num = int(list(model_state_dict.keys())[2].split('.')[1])
-            # # print("start_num", start_num)
-            # total_snapshot_layer_num = args.num_layers // args.pipeline_model_parallel_size
-            # per_node_snapshot_layer_num = total_snapshot_layer_num // args.data_parallel_size        
-            # dp_rank = mpu.get_data_parallel_rank()
-            # shard_layers = range(start_num + dp_rank * per_node_snapshot_layer_num, start_num + (dp_rank + 1) * per_node_snapshot_layer_num)
-            # async_snapshotter = AsyncShardedCheckpoint()
-            # async_snapshotter.make_snapshot(model_state_dict, snapshot_stream, torch.cuda.current_device(), shard_layers)
+            model_state_dict = model[0].state_dict()
+            # assert args.num_layers can be divided by args.data_parallel_size * (args.data_parallel_size - 1)
+            assert args.num_layers % (args.data_parallel_size * (args.data_parallel_size - 1)) == 0
+            # Get the 2nd key of model_state_dict
+            start_num = int(list(model_state_dict.keys())[2].split('.')[1])
+            # print("start_num", start_num)
+            total_snapshot_layer_num = args.num_layers // args.pipeline_model_parallel_size
+            per_node_snapshot_layer_num = total_snapshot_layer_num // args.data_parallel_size        
+            dp_rank = mpu.get_data_parallel_rank()
+            shard_layers = range(start_num + dp_rank * per_node_snapshot_layer_num, start_num + (dp_rank + 1) * per_node_snapshot_layer_num)
+            async_snapshotter = AsyncShardedCheckpoint()
+            async_snapshotter.make_snapshot(model_state_dict, snapshot_stream, torch.cuda.current_device(), shard_layers)
             
             
             iteration += 1
