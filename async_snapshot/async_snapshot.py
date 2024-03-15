@@ -1,0 +1,221 @@
+from concurrent.futures import ThreadPoolExecutor
+import asyncio
+import torch
+import aiofiles
+import threading
+import pickle
+import io
+import os
+from datetime import datetime
+import time
+from typing import Dict
+
+import torch.distributed
+
+
+class AsyncCheckpoint:
+    def __init__(self, save_dir, buffer_size=4096, max_workers=1):
+        self.save_dir = save_dir
+        self.buffer_size = buffer_size
+        self.executor = ThreadPoolExecutor(max_workers=max_workers)
+        self.allreduce_semaphore = asyncio.Semaphore(1)
+        self.thread_lock = threading.Lock()
+
+    def save_checkpoint(self, model, optimizer, file_name):
+        start_time = time.time()
+        timestamp = datetime.now().strftime('%H:%M:%S')
+        print(f"[{timestamp}] snapshot started...")
+        
+        asyncio.run(self.allreduce_semaphore.acquire())
+        
+        checkpoint_thread = threading.Thread(
+            target=self._checkpoint_thread,
+            args=(model, optimizer, file_name, start_time)
+        )
+        checkpoint_thread.start()
+
+    def _checkpoint_thread(self, model, optimizer, file_name, start_time):
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            loop.run_until_complete(self._save_checkpoint(model, optimizer, file_name))
+        finally:
+            loop.close()
+        
+        end_time = time.time()
+        elapsed_time = end_time - start_time
+        file_path = os.path.join(self.save_dir, file_name)
+        ckpt_size = os.path.getsize(file_path) / (1024 * 1024)  # MB
+        speed = ckpt_size / elapsed_time
+        timestamp = datetime.now().strftime('%H:%M:%S')
+        print(f"[{timestamp}] Checkpoint size {ckpt_size:.2f} MB, speed {speed:.2f} MB/s, elapsed {elapsed_time:.2f} sec.")
+
+    async def _save_checkpoint(self, model, optimizer, file_name):
+        state = {
+            'model': model.state_dict(),
+            'optimizer': optimizer.state_dict()
+        }
+        buffer = io.BytesIO()
+        current_loop = asyncio.get_event_loop()
+        self.allreduce_semaphore.release()
+        
+        await current_loop.run_in_executor(self.executor, torch.save, state, buffer)
+        buffer.seek(0)
+        file_path = os.path.join(self.save_dir, file_name)
+        async with aiofiles.open(file_path, "wb") as f:
+            await f.write(buffer.read())
+        timestamp = datetime.now().strftime('%H:%M:%S')
+        print(f"[{timestamp}] saved")
+        
+    def make_snapshot(self, state_dict, epoch, use_timer, step_cnt, timer_record_file, use_copy_, snapshot_stream, device, non_blocking_copy, use_pin_memory):
+        # with self.thread_lock:
+        #     asyncio.run(self.allreduce_semaphore.acquire())
+
+        checkpoint_thread = threading.Thread(
+            target=self._snapshot_thread,
+            args=(state_dict, epoch, use_copy_, use_timer, step_cnt, timer_record_file, snapshot_stream, device, non_blocking_copy, use_pin_memory)
+        )
+        checkpoint_thread.start()
+        return checkpoint_thread
+        
+    def _snapshot_thread(self, state_dict, epoch, use_copy_, use_timer, step_cnt, timer_record_file, snapshot_stream, device, non_blocking_copy, use_pin_memory):
+        if use_timer and step_cnt > 10:
+            start_time = time.perf_counter()
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            loop.run_until_complete(self._make_snapshot(state_dict, epoch, use_copy_, snapshot_stream, device, non_blocking_copy, use_pin_memory))
+        finally:
+            loop.close()
+        if use_timer and step_cnt > 10:
+            end_time = time.perf_counter()
+            timer_record_file.write(f"step: {step_cnt}\n")
+            timer_record_file.write(f"snapshot time: {end_time - start_time}\n")
+
+    async def _make_snapshot(self, state_dict, epoch, use_copy_, snapshot_stream, device, non_blocking_copy, use_pin_memory):
+        def _copy_tensors_to_cpu(data, use_copy_):
+            if isinstance(data, dict):
+                cpu_data = {}
+                for key, value in data.items():
+                    if isinstance(value, torch.Tensor):
+                        #print(value)
+                        if use_copy_:
+                            tensor_cpu = torch.empty_like(value, device='cpu').pin_memory() 
+                            tensor_cpu.copy_(value, non_blocking=True)
+                            cpu_data[key] = tensor_cpu
+                        else:
+                            cpu_data[key] = value.cpu()
+                    elif isinstance(value, (dict, list)):
+                        cpu_data[key] = _copy_tensors_to_cpu(value, use_copy_)
+                    else:
+                        cpu_data[key] = value
+                return cpu_data
+            elif isinstance(data, list):
+                cpu_data = []
+                for item in data:
+                    if isinstance(item, torch.Tensor):
+                        #print(value)
+                        if use_copy_:
+                            tensor_cpu = torch.empty_like(item, device='cpu').pin_memory() 
+                            tensor_cpu.copy_(item, non_blocking=True)
+                            cpu_data.append(tensor_cpu)
+                        else:
+                            cpu_data.append(item.cpu())
+                    elif isinstance(item, (dict, list)):
+                        cpu_data.append(_copy_tensors_to_cpu(item, use_copy_))
+                    else:
+                        cpu_data.append(item)
+
+                return cpu_data
+            else:
+                return data
+        # s = torch.cuda.Stream()
+        # s.wait_stream(torch.cuda.default_stream(device))
+        snapshot_stream.wait_stream(torch.cuda.default_stream(device))
+        with torch.cuda.stream(snapshot_stream):
+            state_dict_cpu = _copy_tensors_to_cpu(state_dict, use_copy_)
+
+class AsyncShardedCheckpoint:
+    def __init__(self, max_workers=4):
+        self.executor = ThreadPoolExecutor(max_workers=max_workers)
+
+    def save_checkpoint(self, model, optimizer, rank, epoch, is_partition=False):
+        start_time = time.time()
+        timestamp = datetime.now().strftime('%H:%M:%S')
+        print(f"[{timestamp}] Rank {rank} snapshot started...")
+        
+        checkpoint_thread = threading.Thread(
+            target=self._checkpoint_thread,
+            args=(model, optimizer, rank, epoch, is_partition, start_time)
+        )
+        checkpoint_thread.start()
+
+    def _checkpoint_thread(self, model, optimizer, rank, epoch, is_partition, start_time):
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            loop.run_until_complete(self._save_sharded_checkpoint(model, optimizer, rank, epoch, is_partition))
+        finally:
+            loop.close()
+        end_time = time.time()
+        elapsed_time = end_time - start_time
+        ckpt_file = os.path.join(self.save_dir, f"sharded_checkpoint_rank_{rank}_epoch_{epoch}.pth")
+        ckpt_size = os.path.getsize(ckpt_file) / (1024 * 1024)
+        speed = ckpt_size / elapsed_time
+        timestamp = datetime.now().strftime('%H:%M:%S')
+        print(f"[{timestamp}] Rank {rank} Checkpoint size {ckpt_size:.2f} MB, speed {speed:.2f} MB/s, elapsed {elapsed_time:.2f} sec.")
+
+    async def _save_sharded_checkpoint(self, model, optimizer, rank, epoch, is_partition):
+        if is_partition: # I think that the meaning here is that the model is doing MP
+            shard_model_state_dict_cpu = {k: model.state_dict()[k].cpu() for k in self.config[str(rank)]}
+        else: # It is doing DP, so I need to use the module to get the state_dict
+            full_model_state_dict = model.module.state_dict()
+            shard_model_state_dict_cpu = {k: full_model_state_dict[k].cpu() for k in self.config[str(rank)]}
+        
+        full_optimizer_state_dict = optimizer.state_dict()
+        shard_optimizer_state_dict = {
+            'state': {p: full_optimizer_state_dict['state'][p] for group in full_optimizer_state_dict['param_groups'] for p in group['params'] if p in full_optimizer_state_dict['state']},
+            'param_groups': full_optimizer_state_dict['param_groups']
+        }
+        
+        buffer = io.BytesIO()
+        current_loop = asyncio.get_event_loop()
+        self.allreduce_semaphore.release()
+        await current_loop.run_in_executor(self.executor, pickle.dump, {'model': shard_model_state_dict_cpu, 'optimizer': shard_optimizer_state_dict}, buffer)
+        buffer.seek(0)
+        ckpt_file = os.path.join(self.save_dir, f"sharded_checkpoint_rank_{rank}_epoch_{epoch}.pth")
+        async with aiofiles.open(ckpt_file, "wb") as f:
+            await f.write(buffer.read())
+        timestamp = datetime.now().strftime('%H:%M:%S')
+        print(f"[{timestamp}] Rank {rank} saved.")
+        
+    def make_snapshot(self, state_dict, snapshot_stream, device, shard_layers):
+        # with self.thread_lock:
+        #     asyncio.run(self.allreduce_semaphore.acquire())
+
+        checkpoint_thread = threading.Thread(
+            target=self._snapshot_thread,
+            args=(state_dict, snapshot_stream, device, shard_layers)
+        )
+        checkpoint_thread.start()
+        return checkpoint_thread
+        
+    def _snapshot_thread(self, state_dict, snapshot_stream, device, shard_layers):
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            loop.run_until_complete(self._make_snapshot(state_dict, snapshot_stream, device, shard_layers))
+        finally:
+            loop.close()
+
+    async def _make_snapshot(self, state_dict:Dict, snapshot_stream, device, shard_layers):
+        # assume state_dict is model.state_dict
+        snapshot_stream.wait_stream(torch.cuda.default_stream(device))
+        with torch.cuda.stream(snapshot_stream):
+            for layer_num in shard_layers:
+                # layer_num is the layer to snapshot
+                # traverse state_dict, if layer_num reside in a key, then snapshot it
+                for key, value in state_dict.items():
+                    if str(layer_num) in key:
+                        tensor_cpu = torch.empty_like(value, device='cpu').pin_memory() 
+                        tensor_cpu.copy_(value, non_blocking=True)
